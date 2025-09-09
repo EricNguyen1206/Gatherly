@@ -1,0 +1,29 @@
+{
+  "server": {
+    "port": 3000,
+    "host": "0.0.0.0",
+    "corsOrigin": "*",
+    "nodeEnv": "development",
+    "https": {
+      "enabled": true,
+      "keyFile": "key.pem",
+      "certFile": "cert.pem"
+    }
+  },
+  "client": {
+    "serverUrl": "https://localhost:3000",
+    "wsUrl": "wss://localhost:3000",
+    "autoReconnectDelay": 3000,
+    "connectionTimeout": 10000
+  },
+  "webrtc": {
+    "iceServers": [
+      {
+        "urls": "stun:stun.l.google.com:19302"
+      },
+      {
+        "urls": "stun:stun1.l.google.com:19302"
+      }
+    ]
+  }
+}

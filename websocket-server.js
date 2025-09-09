@@ -58,6 +58,14 @@ class WebSocketServer extends EventEmitter {
         return hash.digest('base64');
     }
 
+    broadcast(sender, message) {
+        this.clients.forEach(client => {
+            if (client !== sender) {
+                client.send(message);
+            }
+        });
+    }
+
     close() {
         this.clients.forEach(client => {
             client.close();

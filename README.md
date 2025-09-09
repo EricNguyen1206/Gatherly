@@ -13,7 +13,7 @@ A modern, zero-dependency video conference application with Google Meet-inspired
 node server.js
 
 # Access the application
-# Open browser: https://localhost:3000
+# Open browser: https://localhost:5000
 ```
 
 That's it! No dependencies, no configuration files, no package managers required.
@@ -61,7 +61,7 @@ ZoomRTC/
 
 ### Starting a Meeting
 1. **Start Server**: Run `node server.js`
-2. **Open Browser**: Navigate to `https://localhost:3000`
+2. **Open Browser**: Navigate to `https://localhost:5000`
 3. **Accept SSL Warning**: Click "Advanced" → "Proceed to localhost (unsafe)"
 4. **Enter Details**: Input your name and room ID
 5. **Join Meeting**: Click "Join" button
@@ -69,7 +69,7 @@ ZoomRTC/
 ### Sharing a Meeting
 1. **Copy Room URL**: Click "📋 Copy Room URL" button
 2. **Share Link**: Send the HTTPS URL to other participants
-3. **LAN Access**: Others can join via your LAN IP (e.g., `https://10.1.13.36:3000`)
+3. **LAN Access**: Others can join via your LAN IP (e.g., `https://10.1.13.36:5000`)
 
 ### Meeting Controls
 - **🎤 Microphone**: Toggle audio on/off
@@ -84,7 +84,7 @@ ZoomRTC/
 ```json
 {
   "server": {
-    "port": 3000,
+    "port": 5000,
     "host": "0.0.0.0",
     "https": {
       "enabled": true,
@@ -93,8 +93,8 @@ ZoomRTC/
     }
   },
   "client": {
-    "serverUrl": "https://localhost:3000",
-    "wsUrl": "wss://localhost:3000"
+    "serverUrl": "https://localhost:5000",
+    "wsUrl": "wss://localhost:5000"
   },
   "webrtc": {
     "iceServers": [
@@ -128,11 +128,11 @@ ZoomRTC/
 ## 🌐 Network Access
 
 ### Local Access
-- **HTTPS**: `https://localhost:3000`
+- **HTTPS**: `https://localhost:5000`
 - **Features**: Full media access (camera, microphone)
 
 ### LAN Access  
-- **HTTPS**: `https://[YOUR_LAN_IP]:3000` (e.g., `https://10.1.13.36:3000`)
+- **HTTPS**: `https://[YOUR_LAN_IP]:5000` (e.g., `https://10.1.13.36:5000`)
 - **Features**: Full media access with HTTPS
 - **Sharing**: Copy room URL for others to join
 
@@ -162,7 +162,7 @@ node server.js
 FROM node:18-alpine
 COPY . /app
 WORKDIR /app
-EXPOSE 3000
+EXPOSE 5000
 CMD ["node", "server.js"]
 ```
 
@@ -180,8 +180,8 @@ CMD ["node", "server.js"]
 - Check browser permissions for camera/microphone
 
 **Connection Issues**
-- Ensure firewall allows port 3000
-- Check if another process is using port 3000
+- Ensure firewall allows port 5000
+- Check if another process is using port 5000
 - Verify network connectivity
 
 **Screen Sharing Not Working**

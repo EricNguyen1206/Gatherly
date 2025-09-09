@@ -1,6 +1,6 @@
 {
   "server": {
-    "port": 3000,
+    "port": 5000,
     "host": "0.0.0.0",
     "corsOrigin": "*",
     "nodeEnv": "development",
@@ -11,9 +11,9 @@
     }
   },
   "client": {
-    "serverUrl": "https://localhost:3000",
-    "wsUrl": "wss://localhost:3000",
-    "autoReconnectDelay": 3000,
+    "serverUrl": "https://localhost:5000",
+    "wsUrl": "wss://localhost:5000",
+    "autoReconnectDelay": 5000,
     "connectionTimeout": 10000
   },
   "webrtc": {

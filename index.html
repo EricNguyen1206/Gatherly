@@ -545,9 +545,9 @@
                 // Fallback configuration
                 appConfig = {
                     client: {
-                        serverUrl: 'https://localhost:3000',
-                        wsUrl: 'wss://localhost:3000',
-                        autoReconnectDelay: 3000,
+                        serverUrl: 'https://localhost:5000',
+                        wsUrl: 'wss://localhost:5000',
+                        autoReconnectDelay: 5000,
                         connectionTimeout: 10000
                     },
                     webrtc: {
@@ -575,7 +575,7 @@
                 // Fallback to current location
                 serverInfo = {
                     ip: window.location.hostname,
-                    port: window.location.port || '3000',
+                    port: window.location.port || '5000',
                     url: window.location.origin
                 };
                 console.log('Using fallback server info');
@@ -675,7 +675,7 @@
                 setTimeout(() => {
                     console.log('Attempting to reconnect...');
                     connectWebSocket();
-                }, appConfig?.client?.autoReconnectDelay || 3000);
+                }, appConfig?.client?.autoReconnectDelay || 5000);
             };
             
             ws.onerror = (error) => {
@@ -1436,7 +1436,7 @@
             
             setTimeout(() => {
                 status.classList.remove('show');
-            }, 3000);
+            }, 5000);
         }
     </script>
 </body>

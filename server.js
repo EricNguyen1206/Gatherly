@@ -16,7 +16,7 @@ try {
   // Fallback to default configuration
   config = {
     server: {
-      port: 3000,
+      port: 5000,
       host: '0.0.0.0',
       corsOrigin: '*',
       nodeEnv: 'development'

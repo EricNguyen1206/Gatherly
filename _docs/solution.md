@@ -1,44 +1,92 @@
-# Giải pháp sửa lỗi WebSocket Server khi upgrade
+# Giải pháp sửa lỗi WebSocket Server - Room chỉ hiển thị 1 user
 
 ## Vấn đề
-Lỗi `TypeError: Cannot read properties of undefined (reading 'on')` xảy ra khi khởi tạo WebSocketServer vì:
-- Trong `server.js` dòng 95: `new WebSocketServer(server)` 
-- Constructor của `WebSocketServer` mong đợi object với thuộc tính `server`: `this.server = options.server`
-- Khi truyền trực tiếp `server`, `options.server` sẽ là `undefined`
+Khi mở 2 tab cùng room ID, mỗi tab chỉ hiển thị 1 user (chính nó) trong danh sách participants, mặc dù cả 2 tab đều đã join thành công vào cùng một room.
 
-## Giải pháp đã áp dụng
+## Nguyên nhân
+Lỗi nằm ở logic xử lý `join-room` trong hàm `handleJoinRoom` tại file `server.js` (dòng 234-258):
 
-### 1. Sửa cách khởi tạo WebSocketServer
-**File:** `server.js` dòng 95
+### Lỗi logic ban đầu:
 ```javascript
-// Trước (SAI):
-const wss = new WebSocketServer(server);
+function handleJoinRoom(ws, roomId, userId) {
+  // ... khởi tạo room và connection ...
+  
+  // ❌ LỖI: Gửi existing users TRƯỚC KHI thêm user vào room
+  const existingUsers = Array.from(room);
+  sendMessage(ws, 'existing-users', { users: existingUsers });
 
-// Sau (ĐÚNG):
-const wss = new WebSocketServer({ server });
-```
-
-### 2. Thêm method broadcast
-**File:** `websocket-server.js` 
-Thêm method `broadcast` vào class `WebSocketServer`:
-```javascript
-broadcast(sender, message) {
-    this.clients.forEach(client => {
-        if (client !== sender) {
-            client.send(message);
-        }
-    });
+  // ❌ LỖI: Thêm user vào room SAU KHI đã gửi existing users
+  room.add(userId);
 }
 ```
 
-## Kết quả
-- Server chạy thành công không còn lỗi
-- WebSocket server hoạt động bình thường
-- Có thể xử lý các kết nối WebSocket và broadcast messages
+### Hậu quả:
+1. User thứ 2 join room → server gửi danh sách `existing-users` rỗng (vì user thứ 1 chưa được thêm vào room)
+2. User thứ 1 không nhận được thông báo về user thứ 2
+3. Mỗi user chỉ thấy chính mình trong danh sách participants
+
+## Giải pháp đã áp dụng
+
+### Sửa thứ tự xử lý trong `handleJoinRoom`:
+**File:** `server.js` dòng 234-258
+
+```javascript
+function handleJoinRoom(ws, roomId, userId) {
+  console.log(`User ${userId} joining room ${roomId}`);
+
+  // Initialize room if not exists
+  if (!rooms.has(roomId)) {
+    rooms.set(roomId, new Set());
+  }
+
+  const room = rooms.get(roomId);
+  
+  // Store connection info
+  connections.set(ws, { userId, roomId });
+
+  // ✅ SỬA: Thêm user vào room TRƯỚC
+  room.add(userId);
+
+  // ✅ SỬA: Gửi existing users (loại trừ user hiện tại)
+  const existingUsers = Array.from(room).filter(id => id !== userId);
+  sendMessage(ws, 'existing-users', { users: existingUsers });
+
+  // Notify existing users about new user
+  broadcastToRoom(roomId, 'user-joined', { userId }, ws);
+  
+  console.log(`Room ${roomId} now has users:`, Array.from(room));
+}
+```
+
+### Các thay đổi chính:
+1. **Thêm user vào room TRƯỚC** khi gửi danh sách existing users
+2. **Lọc bỏ user hiện tại** khỏi danh sách existing users để tránh hiển thị chính mình
+3. **Đảm bảo thứ tự đúng**: Add → Send existing users → Broadcast user-joined
+
+## Kết quả mong đợi
+- Khi user thứ 2 join room, sẽ nhận được danh sách existing users (chứa user thứ 1)
+- User thứ 1 sẽ nhận được thông báo `user-joined` về user thứ 2
+- Cả 2 tab sẽ hiển thị đầy đủ danh sách participants
+- WebRTC peer connections sẽ được thiết lập đúng cách
 
 ## Test
-```bash
-node server.js
-# Output: Configuration loaded from config.json
-# Server running at: http://localhost:5000
+1. Khởi động server: `node server.js`
+2. Mở 2 tab trình duyệt với cùng room ID (ví dụ: `#123`)
+3. Kiểm tra:
+   - Tab 1: Hiển thị "People (2)" với 2 users
+   - Tab 2: Hiển thị "People (2)" với 2 users
+   - Cả 2 tab đều thấy video của nhau
+
+## Logs để debug
+Server sẽ in ra:
 ```
+User User-771 joining room 123
+Room 123 now has users: ['User-771']
+User User-395 joining room 123  
+Room 123 now has users: ['User-771', 'User-395']
+```
+
+Client sẽ nhận được:
+- Tab 1: `existing-users: []` (room trống)
+- Tab 2: `existing-users: ['User-771']` (có user 1)
+- Tab 1: `user-joined: {userId: 'User-395'}` (thông báo user 2 join)

@@ -244,15 +244,15 @@ function handleJoinRoom(ws, roomId, userId) {
   // Store connection info
   connections.set(ws, { userId, roomId });
 
-  // Send existing users to new user
-  const existingUsers = Array.from(room);
+  // Add user to room FIRST
+  room.add(userId);
+
+  // Send existing users to new user (excluding the current user)
+  const existingUsers = Array.from(room).filter(id => id !== userId);
   sendMessage(ws, 'existing-users', { users: existingUsers });
 
   // Notify existing users about new user
   broadcastToRoom(roomId, 'user-joined', { userId }, ws);
-
-  // Add user to room
-  room.add(userId);
   
   console.log(`Room ${roomId} now has users:`, Array.from(room));
 }

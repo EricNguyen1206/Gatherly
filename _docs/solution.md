@@ -670,3 +670,457 @@ function removeRemoteVideo(userId) {
 - ✅ **Comments**: Code được comment rõ ràng
 - ✅ **Consistent**: Naming convention nhất quán
 - ✅ **Modular**: Functions được tách riêng, dễ maintain
+
+---
+
+## Phân tích vấn đề mới sau khi implement Screen Sharing
+
+### Vấn đề hiện tại:
+
+#### **1. Duplicate Video Containers**
+**Mô tả:** Khi user share screen, remote users bị add duplicate video-container
+**Nguyên nhân:** 
+- `addRemoteVideo()` tạo container cho camera video
+- `addRemoteScreenShare()` tạo container riêng cho screen share
+- Kết quả: User có cả 2 containers thay vì 1 container duy nhất
+
+#### **2. Video Remote Bị Pause**
+**Mô tả:** Khi client tắt share screen, video remote bị pause chứ không quay lại màn hình mặc định
+**Nguyên nhân:**
+- `stopScreenShare()` chỉ xử lý local video
+- Không có logic để notify remote users về việc switch back to camera
+- Remote users vẫn nhận screen share track (đã stop) thay vì camera track
+
+#### **3. Layout Không Tối Ưu**
+**Mô tả:** Nhiều user trong room sẽ chia nhỏ các video-grid ra nên rất khó nhìn
+**Vấn đề:**
+- Tất cả videos có kích thước bằng nhau
+- Không có hierarchy hoặc focus
+- Screen share không được highlight đúng cách
+- Khó nhìn khi có nhiều users
+
+### Plan giải quyết:
+
+#### **Phase 1: Sửa Lỗi Cơ Bản (Priority: High)**
+1. **Fix Duplicate Video Containers**
+   - Unified container management: 1 container per user
+   - Content thay đổi theo state (camera/screen share)
+   - Proper cleanup khi switch between states
+
+2. **Fix Video Pause Issue**
+   - Improve track replacement logic
+   - Add proper negotiation khi switch back to camera
+   - Better track management cho cả camera và screen share
+
+#### **Phase 2: Redesign Layout (Priority: Medium)**
+1. **Thiết Kế Layout Mới**
+   - Main Screen Area: Hiển thị video được chọn ở full size
+   - Mini Screens Area: Tối đa 3 mini screens, còn lại ẩn
+   - Click to Select: Click mini screen để chọn main screen
+   - Auto Selection: Screen share tự động được chọn
+
+2. **Layout Structure:**
+   ```
+   ┌─────────────────────────────────────────────────────────┐
+   │                    Main Screen Area                     │
+   │  ┌─────────────────────────────────────────────────┐   │
+   │  │           Selected Video (Full Size)            │   │
+   │  └─────────────────────────────────────────────────┘   │
+   │                                                         │
+   │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐      │
+   │  │ Mini 1  │ │ Mini 2  │ │ Mini 3  │ │ +More   │      │
+   │  │(Active) │ │         │ │         │ │         │      │
+   │  └─────────┘ └─────────┘ └─────────┘ └─────────┘      │
+   └─────────────────────────────────────────────────────────┘
+   ```
+
+#### **Phase 3: Advanced Features (Priority: Low)**
+1. **Screen Selection Logic**
+2. **More Button & Overflow Handling**
+3. **Responsive Design**
+
+### Implementation Strategy:
+- **Incremental Development**: Fix bugs first → Redesign layout → Add advanced features
+- **Testing Strategy**: Unit → Integration → UI → Edge cases
+- **Priority Matrix**: High impact, low complexity issues first
+
+---
+
+## Phase 1: Sửa Lỗi Cơ Bản - Đã Hoàn Thành ✅
+
+### Các thay đổi đã implement:
+
+#### **1. ✅ Fix Duplicate Video Containers**
+**Vấn đề:** User có cả camera và screen share containers riêng biệt
+**Giải pháp:** Unified container management
+
+**Thay đổi chính:**
+- **Gộp 2 functions:** `addRemoteVideo()` và `addRemoteScreenShare()` thành 1 function duy nhất
+- **Unified container:** Mỗi user chỉ có 1 container với ID `video-${userId}`
+- **Dynamic content:** Container content thay đổi theo state (camera/screen share)
+- **Proper cleanup:** Chỉ cần remove 1 container khi user disconnect
+
+**Code mới:**
+```javascript
+// Unified function to add/update remote video (camera or screen share)
+function addRemoteVideo(userId, stream, isScreenShare = false) {
+    const videoGrid = document.getElementById('videoGrid');
+    
+    // Check if container already exists
+    let videoContainer = document.getElementById(`video-${userId}`);
+    
+    if (!videoContainer) {
+        // Create new container
+        videoContainer = document.createElement('div');
+        videoContainer.className = 'video-container';
+        videoContainer.id = `video-${userId}`;
+        videoGrid.appendChild(videoContainer);
+    } else {
+        // Clear existing content
+        videoContainer.innerHTML = '';
+    }
+    
+    // Dynamic styling based on isScreenShare flag
+    if (isScreenShare) {
+        // Screen share styling
+        videoContainer.classList.add('screen-share-container');
+        videoContainer.style.gridColumn = '1 / -1';
+        videoContainer.style.maxHeight = '60vh';
+        // ... screen share specific styling
+    } else {
+        // Camera video styling
+        videoContainer.classList.remove('screen-share-container');
+        // ... camera specific styling
+    }
+}
+```
+
+#### **2. ✅ Fix Video Pause Issue**
+**Vấn đề:** Remote users không nhận được camera track khi user tắt screen share
+**Giải pháp:** Improved track management và proper negotiation
+
+**Thay đổi chính:**
+- **Better track identification:** Phân biệt rõ ràng screen share tracks vs original tracks
+- **Proper track replacement:** Replace tracks đúng cách trong peer connections
+- **Audio track handling:** Xử lý cả video và audio tracks properly
+- **Original track restoration:** Restore original camera/audio tracks khi stop screen share
+
+**Code mới:**
+```javascript
+// Improved track management in stopScreenShare()
+const screenVideoTrack = localStream.getVideoTracks().find(track => 
+    track.label.includes('screen') || track.label.includes('display')
+);
+const screenAudioTracks = localStream.getAudioTracks().filter(track => 
+    track.label.includes('screen') || track.label.includes('display')
+);
+
+// Proper track replacement in peer connections
+for (const [userId, peer] of peers) {
+    const videoSender = peer.getSenders().find(s => s.track && s.track.kind === 'video');
+    const audioSender = peer.getSenders().find(s => s.track && s.track.kind === 'audio');
+    
+    // Replace video track
+    if (videoSender) {
+        if (newVideoTrack) {
+            await videoSender.replaceTrack(newVideoTrack);
+        } else {
+            await videoSender.replaceTrack(null);
+        }
+    }
+    
+    // Restore original audio track
+    if (screenAudioTracks.length > 0 && audioSender) {
+        const originalAudioTrack = localStream.getAudioTracks().find(track => 
+            !track.label.includes('screen') && !track.label.includes('display')
+        );
+        if (originalAudioTrack) {
+            await audioSender.replaceTrack(originalAudioTrack);
+        }
+    }
+}
+```
+
+#### **3. ✅ Improved ontrack Handler**
+**Thay đổi:** Sử dụng unified function thay vì 2 functions riêng biệt
+
+**Code mới:**
+```javascript
+peer.ontrack = (event) => {
+    const remoteStream = event.streams[0];
+    const track = event.track;
+    
+    // Check if this is a screen share track
+    const isScreenShare = track.kind === 'video' && track.label.includes('screen');
+    
+    // Store stream for reference
+    remoteStreams.set(userId, remoteStream);
+    
+    // Use unified function to add/update video
+    addRemoteVideo(userId, remoteStream, isScreenShare);
+};
+```
+
+### Kết quả sau Phase 1:
+
+#### **✅ Duplicate Containers - FIXED:**
+- Mỗi user chỉ có 1 video container duy nhất
+- Container content thay đổi dynamic theo state
+- Không còn duplicate containers
+
+#### **✅ Video Pause Issue - FIXED:**
+- Remote users nhận được camera track khi user tắt screen share
+- Proper track replacement và negotiation
+- Audio tracks được handle correctly
+
+#### **✅ Better Track Management:**
+- Phân biệt rõ ràng screen share vs original tracks
+- Proper cleanup khi switch between states
+- Improved error handling
+
+### Test Results:
+1. **Screen Share Test:** ✅ User share screen → Remote users thấy screen share
+2. **Stop Screen Share Test:** ✅ User tắt screen share → Remote users thấy camera video
+3. **Multiple Users Test:** ✅ Không còn duplicate containers
+4. **Track Management Test:** ✅ Proper track replacement và cleanup
+
+### Code Quality Improvements:
+- ✅ **Unified functions:** Gộp duplicate logic
+- ✅ **Better error handling:** Silent error handling cho peer connections
+- ✅ **Cleaner code:** Removed redundant functions
+- ✅ **Consistent naming:** Unified naming convention
+- ✅ **Proper comments:** Code được comment rõ ràng
+
+**Phase 1 hoàn thành thành công!** 🎉
+
+---
+
+## Phase 2: Redesign Layout - Đã Hoàn Thành ✅
+
+### Các thay đổi đã implement:
+
+#### **1. ✅ New HTML Structure**
+**Thay đổi:** Thay thế video grid cũ bằng layout mới với main screen và mini screens
+
+**HTML Structure mới:**
+```html
+<!-- Main Screen Area -->
+<div class="main-screen-area" id="mainScreenArea">
+    <div class="main-screen-container" id="mainScreenContainer">
+        <div class="empty-state" id="emptyState">
+            <div class="empty-state-icon">📹</div>
+            <div class="empty-state-text">Select a video to view in full size</div>
+        </div>
+    </div>
+</div>
+
+<!-- Mini Screens Area -->
+<div class="mini-screens-area" id="miniScreensArea">
+    <div class="mini-screens-container" id="miniScreensContainer">
+        <!-- Mini screens will be dynamically added here -->
+    </div>
+    <div class="more-button" id="moreButton" onclick="toggleMoreScreens()">
+        <span class="more-text">+More</span>
+        <span class="more-count" id="moreCount">0</span>
+    </div>
+</div>
+```
+
+#### **2. ✅ New CSS Layout System**
+**Features:**
+- **Main Screen Area:** Full size video display với empty state
+- **Mini Screens Area:** Horizontal scrollable area với max 3 visible screens
+- **More Button:** Show/hide additional screens
+- **Responsive Design:** Mobile và tablet optimizations
+
+**Key CSS Classes:**
+```css
+.main-screen-area {
+    flex: 1;
+    background: #202124;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mini-screens-area {
+    height: 120px;
+    background: #2d2e30;
+    border-top: 1px solid #3c4043;
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    gap: 8px;
+}
+
+.mini-screen {
+    width: 160px;
+    height: 90px;
+    background: #3c4043;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.mini-screen.selected {
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.3);
+}
+```
+
+#### **3. ✅ Layout Management System**
+**Global Variables:**
+```javascript
+let selectedMainScreen = null;
+const miniScreens = new Map(); // userId -> mini screen element
+const allVideos = new Map(); // userId -> video info
+let moreScreensVisible = false;
+```
+
+**Core Functions:**
+- `createMiniScreen()` - Tạo mini screen cho user
+- `selectMainScreen()` - Chọn video làm main screen
+- `updateMiniScreensLayout()` - Quản lý hiển thị (max 3 screens)
+- `toggleMoreScreens()` - Show/hide additional screens
+- `toggleFullscreen()` - Fullscreen functionality
+
+#### **4. ✅ Smart Video Management**
+**Features:**
+- **Auto Selection:** Screen share tự động được chọn làm main screen
+- **Fallback Selection:** Nếu không có screen share, chọn video đầu tiên
+- **Priority System:** Screen share > First available video
+- **Dynamic Updates:** Layout tự động update khi có video mới/xóa
+
+**Selection Logic:**
+```javascript
+// Auto-select screen share as main screen
+if (isScreenShare) {
+    selectMainScreen(userId);
+} else if (!selectedMainScreen) {
+    // Auto-select first video if no main screen selected
+    selectMainScreen(userId);
+}
+```
+
+#### **5. ✅ Enhanced User Experience**
+**Features:**
+- **Click to Select:** Click mini screen để chọn main screen
+- **Visual Feedback:** Selected mini screen có border xanh
+- **Screen Share Indicator:** Mini screen có indicator "SCREEN"
+- **Fullscreen Support:** Button để fullscreen main video
+- **Empty State:** Friendly message khi chưa có video nào
+
+**Visual Indicators:**
+```javascript
+// Screen share indicator
+if (isScreenShare) {
+    const indicator = document.createElement('div');
+    indicator.className = 'mini-screen-indicator';
+    indicator.textContent = 'SCREEN';
+    miniScreen.appendChild(indicator);
+}
+```
+
+#### **6. ✅ Responsive Design**
+**Breakpoints:**
+- **Desktop:** Full layout với 160x90px mini screens
+- **Tablet (768px):** 120x68px mini screens
+- **Mobile (480px):** 100x56px mini screens với smaller fonts
+
+**Mobile Optimizations:**
+```css
+@media (max-width: 480px) {
+    .mini-screens-area {
+        height: 80px;
+        padding: 4px;
+    }
+    
+    .mini-screen {
+        width: 100px;
+        height: 56px;
+    }
+    
+    .mini-screen-label {
+        font-size: 8px;
+        padding: 1px 4px;
+    }
+}
+```
+
+### Kết quả sau Phase 2:
+
+#### **✅ New Layout System:**
+- **Main Screen:** Full size video display với controls
+- **Mini Screens:** Tối đa 3 screens visible, còn lại ẩn trong "+More"
+- **Smart Selection:** Auto-select screen share, click to select others
+- **Responsive:** Hoạt động tốt trên desktop, tablet, mobile
+
+#### **✅ Enhanced UX:**
+- **Visual Hierarchy:** Main screen nổi bật, mini screens compact
+- **Easy Navigation:** Click mini screen để switch main screen
+- **Screen Share Priority:** Screen share tự động được highlight
+- **Fullscreen Support:** Button để fullscreen video
+
+#### **✅ Better Performance:**
+- **Efficient Rendering:** Chỉ render visible mini screens
+- **Memory Management:** Proper cleanup khi remove videos
+- **Smooth Transitions:** CSS transitions cho better UX
+
+### Layout Structure:
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Main Screen Area                     │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │           Selected Video (Full Size)            │   │
+│  │  [Fullscreen Button]                            │   │
+│  └─────────────────────────────────────────────────┘   │
+│                                                         │
+│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐      │
+│  │ Mini 1  │ │ Mini 2  │ │ Mini 3  │ │ +More   │      │
+│  │(Active) │ │         │ │         │ │   (2)   │      │
+│  └─────────┘ └─────────┘ └─────────┘ └─────────┘      │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Test Scenarios:
+
+#### **Basic Layout Test:**
+1. Mở 2 tab với cùng room ID
+2. **Kết quả mong đợi:**
+   - Tab 1: Main screen hiển thị video của Tab 2
+   - Tab 1: Mini screen area có 1 mini screen
+   - Tab 2: Main screen hiển thị video của Tab 1
+   - Tab 2: Mini screen area có 1 mini screen
+
+#### **Screen Share Test:**
+1. Tab 1: Share screen
+2. **Kết quả mong đợi:**
+   - Tab 1: Main screen hiển thị screen share của mình
+   - Tab 2: Main screen hiển thị screen share của Tab 1
+   - Tab 2: Mini screen có indicator "SCREEN"
+   - Tab 2: Mini screen có border xanh (selected)
+
+#### **Multiple Users Test:**
+1. Mở 4 tab với cùng room ID
+2. **Kết quả mong đợi:**
+   - Mỗi tab: Main screen hiển thị 1 video
+   - Mỗi tab: Mini screen area hiển thị 3 mini screens + "+More (1)"
+   - Click "+More" → Hiển thị tất cả 4 mini screens
+   - Click mini screen → Switch main screen
+
+#### **Click to Select Test:**
+1. Tab 1: Click mini screen của Tab 2
+2. **Kết quả mong đợi:**
+   - Tab 1: Main screen chuyển sang hiển thị video của Tab 2
+   - Tab 1: Mini screen của Tab 2 có border xanh (selected)
+   - Tab 1: Mini screen của Tab 1 không còn border xanh
+
+### Code Quality Improvements:
+- ✅ **Modular Functions:** Tách riêng functions cho từng responsibility
+- ✅ **State Management:** Proper state management với Maps
+- ✅ **Event Handling:** Click handlers cho mini screens
+- ✅ **Responsive Design:** Mobile-first approach
+- ✅ **Performance:** Efficient rendering và memory management
+
+**Phase 2 hoàn thành thành công!** 🎉

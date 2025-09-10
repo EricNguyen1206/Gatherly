@@ -34,6 +34,204 @@
             position: relative;
         }
 
+        /* Main Screen Area */
+        .main-screen-area {
+            flex: 1;
+            background: #202124;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .main-screen-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: #3c4043;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 8px;
+        }
+
+        .main-screen-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .main-screen-label {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .main-screen-controls {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .main-screen-control-btn {
+            background: rgba(0,0,0,0.6);
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .main-screen-control-btn:hover {
+            background: rgba(0,0,0,0.8);
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #9aa0a6;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state-text {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        /* Mini Screens Area */
+        .mini-screens-area {
+            height: 120px;
+            background: #2d2e30;
+            border-top: 1px solid #3c4043;
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            gap: 8px;
+        }
+
+        .mini-screens-container {
+            flex: 1;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .mini-screens-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .mini-screen {
+            width: 160px;
+            height: 90px;
+            background: #3c4043;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .mini-screen:hover {
+            border-color: #5f6368;
+            transform: scale(1.02);
+        }
+
+        .mini-screen.selected {
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.3);
+        }
+
+        .mini-screen video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .mini-screen-label {
+            position: absolute;
+            bottom: 4px;
+            left: 4px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 500;
+        }
+
+        .mini-screen-indicator {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: rgba(26, 115, 232, 0.9);
+            color: white;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-size: 8px;
+            font-weight: 600;
+        }
+
+        /* More Button */
+        .more-button {
+            width: 60px;
+            height: 90px;
+            background: #3c4043;
+            border: 2px dashed #5f6368;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .more-button:hover {
+            border-color: #1a73e8;
+            background: #5f6368;
+        }
+
+        .more-text {
+            font-size: 12px;
+            font-weight: 500;
+            color: #9aa0a6;
+        }
+
+        .more-count {
+            font-size: 10px;
+            color: #1a73e8;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        /* Legacy video grid (hidden) */
         .video-grid {
             flex: 1;
             display: grid;
@@ -430,6 +628,21 @@
                 height: 36px;
                 font-size: 16px;
             }
+            
+            /* Layout adjustments for tablet */
+            .mini-screens-area {
+                height: 100px;
+            }
+            
+            .mini-screen {
+                width: 120px;
+                height: 68px;
+            }
+            
+            .more-button {
+                width: 50px;
+                height: 68px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -440,6 +653,41 @@
             .join-section {
                 width: 320px;
                 padding: 20px;
+            }
+            
+            /* Mobile layout adjustments */
+            .mini-screens-area {
+                height: 80px;
+                padding: 4px;
+            }
+            
+            .mini-screen {
+                width: 100px;
+                height: 56px;
+            }
+            
+            .more-button {
+                width: 40px;
+                height: 56px;
+            }
+            
+            .mini-screen-label {
+                font-size: 8px;
+                padding: 1px 4px;
+            }
+            
+            .mini-screen-indicator {
+                font-size: 6px;
+                padding: 1px 2px;
+            }
+            
+            .main-screen-container {
+                margin: 4px;
+            }
+            
+            .main-screen-label {
+                font-size: 12px;
+                padding: 6px 8px;
             }
         }
     </style>
@@ -459,7 +707,29 @@
     <div class="meeting-container hidden" id="meetingContainer">
         <!-- Main Content Area -->
         <div class="main-content">
-            <div class="video-grid" id="videoGrid">
+            <!-- Main Screen Area -->
+            <div class="main-screen-area" id="mainScreenArea">
+                <div class="main-screen-container" id="mainScreenContainer">
+                    <div class="empty-state" id="emptyState">
+                        <div class="empty-state-icon">📹</div>
+                        <div class="empty-state-text">Select a video to view in full size</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mini Screens Area -->
+            <div class="mini-screens-area" id="miniScreensArea">
+                <div class="mini-screens-container" id="miniScreensContainer">
+                    <!-- Mini screens will be dynamically added here -->
+                </div>
+                <div class="more-button" id="moreButton" onclick="toggleMoreScreens()">
+                    <span class="more-text">+More</span>
+                    <span class="more-count" id="moreCount">0</span>
+                </div>
+            </div>
+            
+            <!-- Hidden video grid for backward compatibility -->
+            <div class="video-grid hidden" id="videoGrid">
                 <div class="video-container">
                     <video id="localVideo" autoplay muted></video>
                     <div class="video-label">You</div>
@@ -541,6 +811,13 @@
         let currentRoomUrl = '';
         let serverInfo = null;
         let meetingStartTime = null;
+
+        // Layout management variables
+        let selectedMainScreen = null;
+        const miniScreens = new Map(); // userId -> mini screen element
+        const allVideos = new Map(); // userId -> video info
+        let moreScreensVisible = false;
+        const LOCAL_USER_ID = 'local';
 
         // Load configuration from config.json file
         async function loadConfig() {
@@ -998,6 +1275,9 @@
                 // Update camera button based on availability
                 updateCameraButton();
                 
+                // Add local video to layout management
+                addLocalVideoToLayout();
+                
                 updateStatus(`Joined room: ${roomId} as ${userId}`, 'connected');
                 
             } catch (error) {
@@ -1019,6 +1299,33 @@
                 removePeer(userId);
             });
             peers.clear();
+            
+            // Reset layout state
+            selectedMainScreen = null;
+            miniScreens.clear();
+            allVideos.clear();
+            moreScreensVisible = false;
+            
+            // Remove local video from layout
+            const localMiniScreen = miniScreens.get(LOCAL_USER_ID);
+            if (localMiniScreen) {
+                localMiniScreen.remove();
+                miniScreens.delete(LOCAL_USER_ID);
+            }
+            
+            // Clear mini screens container
+            const miniScreensContainer = document.getElementById('miniScreensContainer');
+            miniScreensContainer.innerHTML = '';
+            
+            // Reset main screen to empty state
+            const mainScreenContainer = document.getElementById('mainScreenContainer');
+            mainScreenContainer.innerHTML = '';
+            const emptyState = document.getElementById('emptyState');
+            emptyState.style.display = 'flex';
+            
+            // Hide more button
+            const moreButton = document.getElementById('moreButton');
+            moreButton.style.display = 'none';
             
             currentRoomId = null;
             currentUserId = null;
@@ -1078,12 +1385,13 @@
                 const track = event.track;
                 
                 // Check if this is a screen share track
-                if (track.kind === 'video' && track.label.includes('screen')) {
-                    addRemoteScreenShare(userId, remoteStream);
-                } else {
-                    remoteStreams.set(userId, remoteStream);
-                    addRemoteVideo(userId, remoteStream);
-                }
+                const isScreenShare = track.kind === 'video' && track.label.includes('screen');
+                
+                // Store stream for reference
+                remoteStreams.set(userId, remoteStream);
+                
+                // Use unified function to add/update video
+                addRemoteVideo(userId, remoteStream, isScreenShare);
             };
             
             // Add local stream tracks to the new peer connection
@@ -1108,73 +1416,290 @@
             removeRemoteVideo(userId);
         }
 
-        // Add remote video
-        function addRemoteVideo(userId, stream) {
-            const videoGrid = document.getElementById('videoGrid');
-            const videoContainer = document.createElement('div');
-            videoContainer.className = 'video-container';
-            videoContainer.id = `video-${userId}`;
+        // Unified function to add/update remote video (camera or screen share)
+        function addRemoteVideo(userId, stream, isScreenShare = false) {
+            // Store video info
+            allVideos.set(userId, {
+                stream: stream,
+                isScreenShare: isScreenShare,
+                userId: userId
+            });
             
-            const video = document.createElement('video');
-            video.srcObject = stream;
-            video.autoplay = true;
-            video.playsInline = true;
+            // Create or update mini screen
+            createMiniScreen(userId, stream, isScreenShare);
             
-            const label = document.createElement('div');
-            label.className = 'video-label';
-            label.textContent = userId;
-            
-            videoContainer.appendChild(video);
-            videoContainer.appendChild(label);
-            videoGrid.appendChild(videoContainer);
-        }
-
-        // Add remote screen share
-        function addRemoteScreenShare(userId, stream) {
-            const videoGrid = document.getElementById('videoGrid');
-            
-            // Remove existing screen share for this user if any
-            const existingScreenShare = document.getElementById(`screen-share-${userId}`);
-            if (existingScreenShare) {
-                existingScreenShare.remove();
+            // Auto-select screen share as main screen
+            if (isScreenShare) {
+                selectMainScreen(userId);
+            } else if (!selectedMainScreen) {
+                // Auto-select first video if no main screen selected
+                selectMainScreen(userId);
             }
             
-            const screenShareContainer = document.createElement('div');
-            screenShareContainer.className = 'video-container screen-share-container';
-            screenShareContainer.id = `screen-share-${userId}`;
-            screenShareContainer.style.gridColumn = '1 / -1'; // Take full width
-            screenShareContainer.style.maxHeight = '60vh';
+            // Update mini screens layout
+            updateMiniScreensLayout();
+        }
+
+        // Create or update mini screen
+        function createMiniScreen(userId, stream, isScreenShare = false) {
+            const miniScreensContainer = document.getElementById('miniScreensContainer');
             
+            // Check if mini screen already exists
+            let miniScreen = miniScreens.get(userId);
+            
+            if (!miniScreen) {
+                // Create new mini screen
+                miniScreen = document.createElement('div');
+                miniScreen.className = 'mini-screen';
+                miniScreen.id = `mini-${userId}`;
+                miniScreen.onclick = () => selectMainScreen(userId);
+                
+                miniScreensContainer.appendChild(miniScreen);
+                miniScreens.set(userId, miniScreen);
+            } else {
+                // Clear existing content
+                miniScreen.innerHTML = '';
+            }
+            
+            // Create video element
             const video = document.createElement('video');
             video.srcObject = stream;
             video.autoplay = true;
             video.playsInline = true;
-            video.style.objectFit = 'contain';
+            video.muted = true; // Mute mini screens to avoid audio conflicts
             
+            // Create label
             const label = document.createElement('div');
-            label.className = 'video-label';
-            label.textContent = `${userId} is sharing screen`;
-            label.style.background = 'rgba(26, 115, 232, 0.9)';
+            label.className = 'mini-screen-label';
+            label.textContent = userId === LOCAL_USER_ID ? 'You' : userId;
             
-            screenShareContainer.appendChild(video);
-            screenShareContainer.appendChild(label);
+            miniScreen.appendChild(video);
+            miniScreen.appendChild(label);
             
-            // Insert at the beginning of video grid
-            videoGrid.insertBefore(screenShareContainer, videoGrid.firstChild);
+            // Add screen share indicator
+            if (isScreenShare) {
+                const indicator = document.createElement('div');
+                indicator.className = 'mini-screen-indicator';
+                indicator.textContent = 'SCREEN';
+                miniScreen.appendChild(indicator);
+            }
+        }
+
+        // Select main screen
+        function selectMainScreen(userId) {
+            const mainScreenContainer = document.getElementById('mainScreenContainer');
+            const emptyState = document.getElementById('emptyState');
+            
+            // Clear previous selection
+            miniScreens.forEach((miniScreen, id) => {
+                miniScreen.classList.remove('selected');
+            });
+            
+            // Update selected main screen
+            selectedMainScreen = userId;
+            
+            // Hide empty state
+            emptyState.style.display = 'none';
+            
+            // Clear main screen container
+            mainScreenContainer.innerHTML = '';
+            
+            // Get video info
+            let videoInfo;
+            if (userId === LOCAL_USER_ID) {
+                // Handle local video
+                if (!localStream) return;
+                videoInfo = {
+                    stream: localStream,
+                    isScreenShare: isScreenSharing,
+                    userId: LOCAL_USER_ID
+                };
+            } else {
+                // Handle remote video
+                videoInfo = allVideos.get(userId);
+            }
+            
+            if (!videoInfo) return;
+            
+            // Create main screen video
+            const video = document.createElement('video');
+            video.srcObject = videoInfo.stream;
+            video.autoplay = true;
+            video.playsInline = true;
+            
+            // Create label
+            const label = document.createElement('div');
+            label.className = 'main-screen-label';
+            if (userId === LOCAL_USER_ID) {
+                label.textContent = videoInfo.isScreenShare ? 'You are sharing screen' : 'You';
+            } else {
+                label.textContent = videoInfo.isScreenShare ? `${userId} is sharing screen` : userId;
+            }
+            
+            // Create controls
+            const controls = document.createElement('div');
+            controls.className = 'main-screen-controls';
+            
+            // Add fullscreen button
+            const fullscreenBtn = document.createElement('button');
+            fullscreenBtn.className = 'main-screen-control-btn';
+            fullscreenBtn.innerHTML = '⛶';
+            fullscreenBtn.title = 'Fullscreen';
+            fullscreenBtn.onclick = () => toggleFullscreen(video);
+            
+            controls.appendChild(fullscreenBtn);
+            
+            // Add to container
+            mainScreenContainer.appendChild(video);
+            mainScreenContainer.appendChild(label);
+            mainScreenContainer.appendChild(controls);
+            
+            // Mark mini screen as selected
+            const miniScreen = miniScreens.get(userId);
+            if (miniScreen) {
+                miniScreen.classList.add('selected');
+            }
+        }
+
+        // Update mini screens layout (show max 3, hide rest)
+        function updateMiniScreensLayout() {
+            const miniScreensContainer = document.getElementById('miniScreensContainer');
+            const moreButton = document.getElementById('moreButton');
+            const moreCount = document.getElementById('moreCount');
+            
+            const totalScreens = miniScreens.size;
+            const maxVisible = 3;
+            const hiddenCount = Math.max(0, totalScreens - maxVisible);
+            
+            // Update more button
+            if (hiddenCount > 0) {
+                moreButton.style.display = 'flex';
+                moreCount.textContent = hiddenCount;
+            } else {
+                moreButton.style.display = 'none';
+            }
+            
+            // Show/hide mini screens based on visibility
+            let visibleCount = 0;
+            miniScreens.forEach((miniScreen, userId) => {
+                if (visibleCount < maxVisible) {
+                    miniScreen.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    miniScreen.style.display = 'none';
+                }
+            });
+        }
+
+        // Toggle more screens visibility
+        function toggleMoreScreens() {
+            moreScreensVisible = !moreScreensVisible;
+            const moreButton = document.getElementById('moreButton');
+            
+            if (moreScreensVisible) {
+                // Show all mini screens
+                miniScreens.forEach((miniScreen) => {
+                    miniScreen.style.display = 'block';
+                });
+                moreButton.querySelector('.more-text').textContent = 'Less';
+            } else {
+                // Show only first 3
+                updateMiniScreensLayout();
+                moreButton.querySelector('.more-text').textContent = '+More';
+            }
+        }
+
+        // Toggle fullscreen
+        function toggleFullscreen(video) {
+            if (!document.fullscreenElement) {
+                video.requestFullscreen().catch(err => {
+                    console.log('Error attempting to enable fullscreen:', err);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Add local video to layout management
+        function addLocalVideoToLayout() {
+            if (!localStream) return;
+            
+            // Store local video info
+            allVideos.set(LOCAL_USER_ID, {
+                stream: localStream,
+                isScreenShare: isScreenSharing,
+                userId: LOCAL_USER_ID
+            });
+            
+            // Create mini screen for local video
+            createMiniScreen(LOCAL_USER_ID, localStream, isScreenSharing);
+            
+            // Auto-select local video if sharing screen or no main screen selected
+            if (isScreenSharing || !selectedMainScreen) {
+                selectMainScreen(LOCAL_USER_ID);
+            }
+            
+            // Update mini screens layout
+            updateMiniScreensLayout();
+        }
+
+        // Update local video in layout
+        function updateLocalVideoInLayout() {
+            if (!localStream) return;
+            
+            // Update local video info
+            allVideos.set(LOCAL_USER_ID, {
+                stream: localStream,
+                isScreenShare: isScreenSharing,
+                userId: LOCAL_USER_ID
+            });
+            
+            // Update mini screen
+            createMiniScreen(LOCAL_USER_ID, localStream, isScreenSharing);
+            
+            // Update main screen if local is selected
+            if (selectedMainScreen === LOCAL_USER_ID) {
+                selectMainScreen(LOCAL_USER_ID);
+            }
+            
+            // Update mini screens layout
+            updateMiniScreensLayout();
         }
 
         // Remove remote video
         function removeRemoteVideo(userId) {
-            const videoContainer = document.getElementById(`video-${userId}`);
-            if (videoContainer) {
-                videoContainer.remove();
+            // Remove from allVideos map
+            allVideos.delete(userId);
+            
+            // Remove mini screen
+            const miniScreen = miniScreens.get(userId);
+            if (miniScreen) {
+                miniScreen.remove();
+                miniScreens.delete(userId);
             }
             
-            // Also remove screen share if exists
-            const screenShareContainer = document.getElementById(`screen-share-${userId}`);
-            if (screenShareContainer) {
-                screenShareContainer.remove();
+            // If this was the selected main screen, select another one
+            if (selectedMainScreen === userId) {
+                selectedMainScreen = null;
+                
+                // Try to select another video
+                const remainingVideos = Array.from(allVideos.keys());
+                if (remainingVideos.length > 0) {
+                    // Prioritize screen share, then first available
+                    const screenShareUser = remainingVideos.find(id => allVideos.get(id).isScreenShare);
+                    selectMainScreen(screenShareUser || remainingVideos[0]);
+                } else if (allVideos.has(LOCAL_USER_ID)) {
+                    // Fallback to local video if available
+                    selectMainScreen(LOCAL_USER_ID);
+                } else {
+                    // Show empty state
+                    const emptyState = document.getElementById('emptyState');
+                    emptyState.style.display = 'flex';
+                }
             }
+            
+            // Update mini screens layout
+            updateMiniScreensLayout();
         }
 
         // Add participant to list
@@ -1317,22 +1842,27 @@
                         audio: true 
                     });
                     
-                    const videoTrack = screenStream.getVideoTracks()[0];
-                    const audioTrack = screenStream.getAudioTracks()[0];
+                    const screenVideoTrack = screenStream.getVideoTracks()[0];
+                    const screenAudioTrack = screenStream.getAudioTracks()[0];
                     
-                    // Store the old video track for later restoration
-                    const oldVideoTrack = localStream.getVideoTracks()[0];
+                    // Store reference to original tracks for later restoration
+                    const originalVideoTrack = localStream.getVideoTracks().find(track => 
+                        !track.label.includes('screen') && !track.label.includes('display')
+                    );
+                    const originalAudioTrack = localStream.getAudioTracks().find(track => 
+                        !track.label.includes('screen') && !track.label.includes('display')
+                    );
                     
-                    // Replace video track in local stream
-                    if (oldVideoTrack) {
-                        localStream.removeTrack(oldVideoTrack);
-                        oldVideoTrack.stop();
+                    // Remove original video track
+                    if (originalVideoTrack) {
+                        localStream.removeTrack(originalVideoTrack);
+                        originalVideoTrack.stop();
                     }
-                    localStream.addTrack(videoTrack);
                     
-                    // Add audio track if available
-                    if (audioTrack) {
-                        localStream.addTrack(audioTrack);
+                    // Add screen share tracks
+                    localStream.addTrack(screenVideoTrack);
+                    if (screenAudioTrack) {
+                        localStream.addTrack(screenAudioTrack);
                     }
                     
                     // Update local video
@@ -1346,16 +1876,18 @@
                             const videoSender = peer.getSenders().find(s => s.track && s.track.kind === 'video');
                             const audioSender = peer.getSenders().find(s => s.track && s.track.kind === 'audio');
                             
+                            // Replace video track
                             if (videoSender) {
-                                await videoSender.replaceTrack(videoTrack);
+                                await videoSender.replaceTrack(screenVideoTrack);
                             } else {
-                                peer.addTrack(videoTrack, localStream);
+                                peer.addTrack(screenVideoTrack, localStream);
                             }
                             
-                            if (audioTrack && audioSender) {
-                                await audioSender.replaceTrack(audioTrack);
-                            } else if (audioTrack) {
-                                peer.addTrack(audioTrack, localStream);
+                            // Replace audio track if screen share has audio
+                            if (screenAudioTrack && audioSender) {
+                                await audioSender.replaceTrack(screenAudioTrack);
+                            } else if (screenAudioTrack) {
+                                peer.addTrack(screenAudioTrack, localStream);
                             }
                         } catch (peerError) {
                             // Handle peer connection error silently
@@ -1368,9 +1900,12 @@
                     document.getElementById('shareBtn').title = 'Stop presenting';
                     
                     // Handle screen share end
-                    videoTrack.onended = () => {
+                    screenVideoTrack.onended = () => {
                         stopScreenShare();
                     };
+                    
+                    // Update local video in layout
+                    updateLocalVideoInLayout();
                     
                 } else {
                     stopScreenShare();
@@ -1383,17 +1918,19 @@
 
         async function stopScreenShare() {
             try {
-                // Remove the current video track (screen share)
-                const oldVideoTrack = localStream.getVideoTracks()[0];
-                if (oldVideoTrack) {
-                    localStream.removeTrack(oldVideoTrack);
-                    oldVideoTrack.stop();
-                }
-                
-                // Remove screen share audio track if exists
+                // Store reference to screen share tracks before removing
+                const screenVideoTrack = localStream.getVideoTracks().find(track => 
+                    track.label.includes('screen') || track.label.includes('display')
+                );
                 const screenAudioTracks = localStream.getAudioTracks().filter(track => 
                     track.label.includes('screen') || track.label.includes('display')
                 );
+                
+                // Remove screen share tracks
+                if (screenVideoTrack) {
+                    localStream.removeTrack(screenVideoTrack);
+                    screenVideoTrack.stop();
+                }
                 screenAudioTracks.forEach(track => {
                     localStream.removeTrack(track);
                     track.stop();
@@ -1424,10 +1961,13 @@
                 localVideo.srcObject = localStream;
                 localVideo.parentElement.classList.remove('screen-share');
                 
-                // Update all peer connections with the new video track (or remove video if no camera)
+                // Update all peer connections with proper track replacement
                 for (const [userId, peer] of peers) {
                     try {
                         const videoSender = peer.getSenders().find(s => s.track && s.track.kind === 'video');
+                        const audioSender = peer.getSenders().find(s => s.track && s.track.kind === 'audio');
+                        
+                        // Replace video track
                         if (videoSender) {
                             if (newVideoTrack) {
                                 await videoSender.replaceTrack(newVideoTrack);
@@ -1436,6 +1976,17 @@
                             }
                         } else if (newVideoTrack) {
                             peer.addTrack(newVideoTrack, localStream);
+                        }
+                        
+                        // Remove screen share audio tracks
+                        if (screenAudioTracks.length > 0 && audioSender) {
+                            // Find the original audio track (not screen share)
+                            const originalAudioTrack = localStream.getAudioTracks().find(track => 
+                                !track.label.includes('screen') && !track.label.includes('display')
+                            );
+                            if (originalAudioTrack) {
+                                await audioSender.replaceTrack(originalAudioTrack);
+                            }
                         }
                     } catch (peerError) {
                         // Handle peer connection error silently
@@ -1449,6 +2000,9 @@
                 
                 // Update camera button
                 updateCameraButton();
+                
+                // Update local video in layout
+                updateLocalVideoInLayout();
                 
             } catch (error) {
                 console.error('Error stopping screen share:', error);

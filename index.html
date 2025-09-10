@@ -101,6 +101,17 @@
             transform: none !important;
         }
 
+        /* Screen share container styles */
+        .screen-share-container {
+            border: 2px solid #1a73e8;
+            box-shadow: 0 0 20px rgba(26, 115, 232, 0.3);
+        }
+
+        .screen-share-container .video-label {
+            background: rgba(26, 115, 232, 0.9) !important;
+            font-weight: 600;
+        }
+
         /* Participants Panel (Right) */
         .participants-panel {
             width: 300px;
@@ -539,7 +550,6 @@
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 appConfig = await response.json();
-                console.log('Configuration loaded:', appConfig);
             } catch (error) {
                 console.error('Error loading config.json:', error);
                 // Fallback configuration
@@ -557,7 +567,6 @@
                         ]
                     }
                 };
-                console.log('Using fallback configuration');
             }
         }
 
@@ -569,7 +578,6 @@
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 serverInfo = await response.json();
-                console.log('Server info loaded:', serverInfo);
             } catch (error) {
                 console.error('Error loading server info:', error);
                 // Fallback to current location
@@ -578,7 +586,6 @@
                     port: window.location.port || '5000',
                     url: window.location.origin
                 };
-                console.log('Using fallback server info');
             }
         }
 
@@ -616,6 +623,8 @@
                 document.getElementById('userIdInput').value = 'User-' + Math.floor(Math.random() * 1000);
             }
             
+            // Client sẽ chỉ join room khi user bấm nút "Join" manual
+            
             // Check if accessing via IP instead of localhost
             const isLocalhost = window.location.hostname === 'localhost' || 
                                window.location.hostname === '127.0.0.1';
@@ -649,12 +658,10 @@
         // WebSocket connection
         function connectWebSocket() {
             const wsUrl = getWebSocketURL();
-            console.log('Connecting to WebSocket:', wsUrl);
             
             ws = new WebSocket(wsUrl);
             
             ws.onopen = () => {
-                console.log('WebSocket connected');
                 updateStatus('Connected to server', 'connected');
             };
             
@@ -671,7 +678,16 @@
                 console.log('WebSocket disconnected');
                 updateStatus('Disconnected from server', 'disconnected');
                 
-                // Auto-reconnect
+                // Nếu đang trong room, tự động out room và quay về trang chủ
+                if (currentRoomId && currentUserId) {
+                    console.log('Server disconnected, leaving room and returning to home');
+                    leaveRoom();
+                    // Quay về trang chủ
+                    window.location.href = '/';
+                    return;
+                }
+                
+                // Auto-reconnect chỉ khi không trong room
                 setTimeout(() => {
                     console.log('Attempting to reconnect...');
                     connectWebSocket();
@@ -719,20 +735,17 @@
 
         // Handle user joined
         async function handleUserJoined(userId) {
-            console.log('User joined:', userId);
             addParticipant(userId);
             updateParticipantCount();
             
             // Create peer connection and send offer to the new user
             if (localStream) {
                 try {
-                    console.log('Creating peer connection for new user:', userId);
                     const peer = await createPeerConnection(userId);
                     
                     const offer = await peer.createOffer();
                     await peer.setLocalDescription(offer);
                     sendMessage('offer', { offer, targetUserId: userId });
-                    console.log('Sent offer to new user:', userId);
                 } catch (error) {
                     console.error('Error creating offer for new user:', error);
                 }
@@ -741,7 +754,6 @@
 
         // Handle user left
         function handleUserLeft(userId) {
-            console.log('User left:', userId);
             removeParticipant(userId);
             removePeer(userId);
             updateParticipantCount();
@@ -749,10 +761,11 @@
 
         // Handle existing users
         async function handleExistingUsers(users) {
-            console.log('Existing users:', users);
             users.forEach(userId => {
                 if (userId !== currentUserId) {
                     addParticipant(userId);
+                } else {
+                    console.log('🔍 Skipping self:', userId);
                 }
             });
             updateParticipantCount();
@@ -762,13 +775,11 @@
                 for (const userId of users) {
                     if (userId !== currentUserId) {
                         try {
-                            console.log('Creating peer connection for existing user:', userId);
                             const peer = await createPeerConnection(userId);
                             
                             const offer = await peer.createOffer();
                             await peer.setLocalDescription(offer);
                             sendMessage('offer', { offer, targetUserId: userId });
-                            console.log('Sent offer to existing user:', userId);
                         } catch (error) {
                             console.error('Error creating offer for existing user:', error);
                         }
@@ -780,7 +791,6 @@
         // Handle offer
         async function handleOffer(offer, fromUserId, targetUserId) {
             if (targetUserId === currentUserId) {
-                console.log('Received offer from:', fromUserId);
                 const peer = await createPeerConnection(fromUserId);
                 await peer.setRemoteDescription(offer);
                 
@@ -790,14 +800,12 @@
                 const answer = await peer.createAnswer();
                 await peer.setLocalDescription(answer);
                 sendMessage('answer', { answer, targetUserId: fromUserId });
-                console.log('Sent answer to:', fromUserId);
             }
         }
 
         // Handle answer
         async function handleAnswer(answer, fromUserId, targetUserId) {
             if (targetUserId === currentUserId) {
-                console.log('Received answer from:', fromUserId);
                 const peer = peers.get(fromUserId);
                 if (peer) {
                     await peer.setRemoteDescription(answer);
@@ -1054,18 +1062,33 @@
                 }
             };
             
+            // Handle negotiation needed for new tracks (screen share)
+            peer.onnegotiationneeded = async () => {
+                try {
+                    const offer = await peer.createOffer();
+                    await peer.setLocalDescription(offer);
+                    sendMessage('offer', { offer, targetUserId: userId });
+                } catch (error) {
+                    console.error('Error during negotiation:', error);
+                }
+            };
+            
             peer.ontrack = (event) => {
-                console.log('Received remote stream from:', userId);
                 const remoteStream = event.streams[0];
-                remoteStreams.set(userId, remoteStream);
-                addRemoteVideo(userId, remoteStream);
+                const track = event.track;
+                
+                // Check if this is a screen share track
+                if (track.kind === 'video' && track.label.includes('screen')) {
+                    addRemoteScreenShare(userId, remoteStream);
+                } else {
+                    remoteStreams.set(userId, remoteStream);
+                    addRemoteVideo(userId, remoteStream);
+                }
             };
             
             // Add local stream tracks to the new peer connection
             if (localStream) {
-                console.log('Adding local stream tracks to new peer connection for:', userId);
                 localStream.getTracks().forEach(track => {
-                    console.log(`Adding ${track.kind} track to peer connection`);
                     peer.addTrack(track, localStream);
                 });
             }
@@ -1106,11 +1129,51 @@
             videoGrid.appendChild(videoContainer);
         }
 
+        // Add remote screen share
+        function addRemoteScreenShare(userId, stream) {
+            const videoGrid = document.getElementById('videoGrid');
+            
+            // Remove existing screen share for this user if any
+            const existingScreenShare = document.getElementById(`screen-share-${userId}`);
+            if (existingScreenShare) {
+                existingScreenShare.remove();
+            }
+            
+            const screenShareContainer = document.createElement('div');
+            screenShareContainer.className = 'video-container screen-share-container';
+            screenShareContainer.id = `screen-share-${userId}`;
+            screenShareContainer.style.gridColumn = '1 / -1'; // Take full width
+            screenShareContainer.style.maxHeight = '60vh';
+            
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            video.autoplay = true;
+            video.playsInline = true;
+            video.style.objectFit = 'contain';
+            
+            const label = document.createElement('div');
+            label.className = 'video-label';
+            label.textContent = `${userId} is sharing screen`;
+            label.style.background = 'rgba(26, 115, 232, 0.9)';
+            
+            screenShareContainer.appendChild(video);
+            screenShareContainer.appendChild(label);
+            
+            // Insert at the beginning of video grid
+            videoGrid.insertBefore(screenShareContainer, videoGrid.firstChild);
+        }
+
         // Remove remote video
         function removeRemoteVideo(userId) {
             const videoContainer = document.getElementById(`video-${userId}`);
             if (videoContainer) {
                 videoContainer.remove();
+            }
+            
+            // Also remove screen share if exists
+            const screenShareContainer = document.getElementById(`screen-share-${userId}`);
+            if (screenShareContainer) {
+                screenShareContainer.remove();
             }
         }
 
@@ -1255,7 +1318,7 @@
                     });
                     
                     const videoTrack = screenStream.getVideoTracks()[0];
-                    console.log('Screen share video track:', videoTrack);
+                    const audioTrack = screenStream.getAudioTracks()[0];
                     
                     // Store the old video track for later restoration
                     const oldVideoTrack = localStream.getVideoTracks()[0];
@@ -1263,30 +1326,39 @@
                     // Replace video track in local stream
                     if (oldVideoTrack) {
                         localStream.removeTrack(oldVideoTrack);
-                        oldVideoTrack.stop(); // Stop the old track
+                        oldVideoTrack.stop();
                     }
                     localStream.addTrack(videoTrack);
+                    
+                    // Add audio track if available
+                    if (audioTrack) {
+                        localStream.addTrack(audioTrack);
+                    }
                     
                     // Update local video
                     const localVideo = document.getElementById('localVideo');
                     localVideo.srcObject = localStream;
                     localVideo.parentElement.classList.add('screen-share');
                     
-                    // Update all peer connections with the new video track
-                    console.log('Updating peer connections for screen share...');
+                    // Update all peer connections with the new tracks
                     for (const [userId, peer] of peers) {
                         try {
-                            console.log(`Updating peer connection for user: ${userId}`);
-                            const sender = peer.getSenders().find(s => s.track && s.track.kind === 'video');
-                            if (sender) {
-                                console.log('Replacing video track in existing sender');
-                                await sender.replaceTrack(videoTrack);
+                            const videoSender = peer.getSenders().find(s => s.track && s.track.kind === 'video');
+                            const audioSender = peer.getSenders().find(s => s.track && s.track.kind === 'audio');
+                            
+                            if (videoSender) {
+                                await videoSender.replaceTrack(videoTrack);
                             } else {
-                                console.log('Adding new video track to peer connection');
                                 peer.addTrack(videoTrack, localStream);
                             }
+                            
+                            if (audioTrack && audioSender) {
+                                await audioSender.replaceTrack(audioTrack);
+                            } else if (audioTrack) {
+                                peer.addTrack(audioTrack, localStream);
+                            }
                         } catch (peerError) {
-                            console.error(`Error updating peer connection for ${userId}:`, peerError);
+                            // Handle peer connection error silently
                         }
                     }
                     
@@ -1297,11 +1369,8 @@
                     
                     // Handle screen share end
                     videoTrack.onended = () => {
-                        console.log('Screen share ended by user');
                         stopScreenShare();
                     };
-                    
-                    console.log('Screen sharing started successfully');
                     
                 } else {
                     stopScreenShare();
@@ -1314,15 +1383,21 @@
 
         async function stopScreenShare() {
             try {
-                console.log('Stopping screen share...');
-                
                 // Remove the current video track (screen share)
                 const oldVideoTrack = localStream.getVideoTracks()[0];
                 if (oldVideoTrack) {
                     localStream.removeTrack(oldVideoTrack);
-                    oldVideoTrack.stop(); // Stop the screen share track
-                    console.log('Removed screen share video track');
+                    oldVideoTrack.stop();
                 }
+                
+                // Remove screen share audio track if exists
+                const screenAudioTracks = localStream.getAudioTracks().filter(track => 
+                    track.label.includes('screen') || track.label.includes('display')
+                );
+                screenAudioTracks.forEach(track => {
+                    localStream.removeTrack(track);
+                    track.stop();
+                });
                 
                 // Try to get camera back if available
                 const hasCamera = await checkCameraAvailability();
@@ -1337,14 +1412,11 @@
                         newVideoTrack = cameraStream.getVideoTracks()[0];
                         localStream.addTrack(newVideoTrack);
                         isVideoEnabled = true;
-                        console.log('Restored camera video track');
                     } catch (cameraError) {
-                        console.warn('Could not access camera after screen share:', cameraError);
                         isVideoEnabled = false;
                     }
                 } else {
                     isVideoEnabled = false;
-                    console.log('No camera available after screen share');
                 }
                 
                 // Update local video
@@ -1353,25 +1425,20 @@
                 localVideo.parentElement.classList.remove('screen-share');
                 
                 // Update all peer connections with the new video track (or remove video if no camera)
-                console.log('Updating peer connections after stopping screen share...');
                 for (const [userId, peer] of peers) {
                     try {
-                        console.log(`Updating peer connection for user: ${userId}`);
-                        const sender = peer.getSenders().find(s => s.track && s.track.kind === 'video');
-                        if (sender) {
+                        const videoSender = peer.getSenders().find(s => s.track && s.track.kind === 'video');
+                        if (videoSender) {
                             if (newVideoTrack) {
-                                console.log('Replacing with camera video track');
-                                await sender.replaceTrack(newVideoTrack);
+                                await videoSender.replaceTrack(newVideoTrack);
                             } else {
-                                console.log('Removing video track (no camera)');
-                                await sender.replaceTrack(null);
+                                await videoSender.replaceTrack(null);
                             }
                         } else if (newVideoTrack) {
-                            console.log('Adding new camera video track to peer connection');
                             peer.addTrack(newVideoTrack, localStream);
                         }
                     } catch (peerError) {
-                        console.error(`Error updating peer connection for ${userId}:`, peerError);
+                        // Handle peer connection error silently
                     }
                 }
                 
@@ -1382,8 +1449,6 @@
                 
                 // Update camera button
                 updateCameraButton();
-                
-                console.log('Screen share stopped successfully');
                 
             } catch (error) {
                 console.error('Error stopping screen share:', error);

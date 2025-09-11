@@ -22,6 +22,7 @@
         .meeting-container {
             display: flex;
             height: 100vh;
+            padding-bottom: 64px;
             background: #202124;
         }
 
@@ -195,6 +196,18 @@
             border-radius: 4px;
             font-size: 8px;
             font-weight: 600;
+        }
+
+        .mini-screen-placeholder {
+            width: 100%;
+            height: 100%;
+            background: #2c2c2c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #666;
+            border-radius: 8px;
         }
 
         /* More Button */
@@ -1321,7 +1334,9 @@
             const mainScreenContainer = document.getElementById('mainScreenContainer');
             mainScreenContainer.innerHTML = '';
             const emptyState = document.getElementById('emptyState');
-            emptyState.style.display = 'flex';
+            if(emptyState?.style) {
+                emptyState.style.display = 'flex';
+            }
             
             // Hide more button
             const moreButton = document.getElementById('moreButton');
@@ -1402,6 +1417,11 @@
             }
             
             peers.set(userId, peer);
+            
+            // Add user to mini screens even without video
+            createMiniScreen(userId, null, false);
+            updateMiniScreensLayout();
+            
             return peer;
         }
 
@@ -1414,6 +1434,16 @@
             }
             remoteStreams.delete(userId);
             removeRemoteVideo(userId);
+            
+            // Remove from mini screens
+            const miniScreen = miniScreens.get(userId);
+            if (miniScreen) {
+                miniScreen.remove();
+                miniScreens.delete(userId);
+            }
+            
+            // Update mini screens layout
+            updateMiniScreensLayout();
         }
 
         // Unified function to add/update remote video (camera or screen share)
@@ -1440,7 +1470,12 @@
             updateMiniScreensLayout();
         }
 
-        // Create or update mini screen
+        /** 
+         * Create or update mini screen
+         * @param {string} userId
+         * @param {MediaStream} stream
+         * @param {boolean} isScreenShare
+         */
         function createMiniScreen(userId, stream, isScreenShare = false) {
             const miniScreensContainer = document.getElementById('miniScreensContainer');
             
@@ -1452,7 +1487,10 @@
                 miniScreen = document.createElement('div');
                 miniScreen.className = 'mini-screen';
                 miniScreen.id = `mini-${userId}`;
-                miniScreen.onclick = () => selectMainScreen(userId);
+                miniScreen.onclick = () => {
+                    console.log('TEST 1 miniScreen.onclick', userId);
+                    selectMainScreen(userId);
+                };
                 
                 miniScreensContainer.appendChild(miniScreen);
                 miniScreens.set(userId, miniScreen);
@@ -1461,19 +1499,28 @@
                 miniScreen.innerHTML = '';
             }
             
-            // Create video element
-            const video = document.createElement('video');
-            video.srcObject = stream;
-            video.autoplay = true;
-            video.playsInline = true;
-            video.muted = true; // Mute mini screens to avoid audio conflicts
-            
             // Create label
             const label = document.createElement('div');
             label.className = 'mini-screen-label';
             label.textContent = userId === LOCAL_USER_ID ? 'You' : userId;
             
-            miniScreen.appendChild(video);
+            // Add video element if stream exists
+            if (stream) {
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                video.autoplay = true;
+                video.playsInline = true;
+                video.muted = true; // Mute mini screens to avoid audio conflicts
+                
+                miniScreen.appendChild(video);
+            } else {
+                // Add placeholder for user without video
+                const placeholder = document.createElement('div');
+                placeholder.className = 'mini-screen-placeholder';
+                placeholder.innerHTML = '📹';
+                miniScreen.appendChild(placeholder);
+            }
+            
             miniScreen.appendChild(label);
             
             // Add screen share indicator
@@ -1487,6 +1534,7 @@
 
         // Select main screen
         function selectMainScreen(userId) {
+            console.log('TEST 2 selectMainScreen', userId);
             const mainScreenContainer = document.getElementById('mainScreenContainer');
             const emptyState = document.getElementById('emptyState');
             
@@ -1498,9 +1546,6 @@
             // Update selected main screen
             selectedMainScreen = userId;
             
-            // Hide empty state
-            emptyState.style.display = 'none';
-            
             // Clear main screen container
             mainScreenContainer.innerHTML = '';
             
@@ -1508,7 +1553,11 @@
             let videoInfo;
             if (userId === LOCAL_USER_ID) {
                 // Handle local video
-                if (!localStream) return;
+                if (!localStream) {
+                    // Show empty state for local user without stream
+                    emptyState.style.display = 'flex';
+                    return;
+                }
                 videoInfo = {
                     stream: localStream,
                     isScreenShare: isScreenSharing,
@@ -1517,9 +1566,20 @@
             } else {
                 // Handle remote video
                 videoInfo = allVideos.get(userId);
+                if (!videoInfo) {
+                    // Show empty state for remote user without video
+                    emptyState.style.display = 'flex';
+                    return;
+                }
             }
+
+            console.log('TESTvideoInfo', typeof videoInfo);
+            console.log('TEST videoInfo keys', Object.keys(videoInfo));
             
-            if (!videoInfo) return;
+            // Hide empty state since we have video
+            if(emptyState?.style) {
+                emptyState.style.display = 'none';
+            }
             
             // Create main screen video
             const video = document.createElement('video');
@@ -1671,12 +1731,8 @@
             // Remove from allVideos map
             allVideos.delete(userId);
             
-            // Remove mini screen
-            const miniScreen = miniScreens.get(userId);
-            if (miniScreen) {
-                miniScreen.remove();
-                miniScreens.delete(userId);
-            }
+            // Update mini screen to show placeholder
+            createMiniScreen(userId, null, false);
             
             // If this was the selected main screen, select another one
             if (selectedMainScreen === userId) {
